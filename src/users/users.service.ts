@@ -11,6 +11,8 @@ import { HashingService } from 'src/auth/hashing/hashing.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { TokenPayloadDto } from 'src/auth/dto/token.payload.dto';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 
 @Injectable()
 export class UsersService {
@@ -80,5 +82,35 @@ export class UsersService {
     if (user?.id !== tokenPayloadDto.sub) {
       throw new ForbiddenException('Você não é essa pessoa');
     }
+  }
+
+  async uploadPicture(
+    file: Express.Multer.File,
+    tokenPayload: TokenPayloadDto,
+  ) {
+    if (file.size < 1024) {
+      throw new BadRequestException('File too small!');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: tokenPayload.sub },
+    });
+
+    const fileExtension = path
+      .extname(file.originalname)
+      .toLowerCase()
+      .substring(1);
+
+    const fileName = `${tokenPayload.sub}.${fileExtension}`;
+    const fileFullPath = path.resolve(process.cwd(), 'pictures', fileName);
+
+    await fs.writeFile(fileFullPath, file.buffer);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.picture = fileName;
+    await this.userRepository.save(user);
   }
 }
