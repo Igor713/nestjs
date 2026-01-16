@@ -39,7 +39,9 @@ export class UsersService {
       email: createUserDto.email,
     };
 
-    return await this.userRepository.save(userData);
+    const user = this.userRepository.create(userData);
+
+    return await this.userRepository.save(user);
   }
 
   async update(
