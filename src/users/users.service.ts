@@ -78,6 +78,16 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  async findOne(id: number) {
+    const userFound = await this.userRepository.findOne({ where: { id } });
+
+    if (!userFound) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return userFound;
+  }
+
   async remove(id: number, tokenPayloadDto: TokenPayloadDto) {
     const user = await this.userRepository.findOne({ where: { id } });
 
