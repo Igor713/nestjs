@@ -88,6 +88,20 @@ export class UsersService {
     return userFound;
   }
 
+  async findAll() {
+    const users = await this.userRepository.find({
+      order: {
+        id: 'desc',
+      },
+    });
+
+    if (users.length === 0) {
+      throw new NotFoundException('Usuários não encontrados!');
+    }
+
+    return users;
+  }
+
   async remove(id: number, tokenPayloadDto: TokenPayloadDto) {
     const user = await this.userRepository.findOne({ where: { id } });
 

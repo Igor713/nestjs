@@ -5,7 +5,7 @@ import { User } from './entities/user.entity';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -22,6 +22,7 @@ describe('UsersService', () => {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
+            find: jest.fn(),
           },
         },
         {
@@ -106,6 +107,10 @@ describe('UsersService', () => {
   });
 
   describe('findOne', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
     it('should return an user if exists', async () => {
       const userId = 1;
 
@@ -122,5 +127,59 @@ describe('UsersService', () => {
 
       expect(result).toEqual(userFound);
     });
+
+    it('should throw NotFoundException if user doesnt exists', async () => {
+      const userId = 1;
+
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(usersService.findOne(userId)).rejects.toThrow(
+        'Usuário não encontrado',
+      );
+    });
   });
+
+  describe('findAll', () => {
+    const users = [
+      {
+        id: 1,
+        name: 'Igor',
+        email: 'igor@gmail.com',
+        passwordHash: '123456',
+      } as User,
+      {
+        id: 2,
+        name: 'Kauane',
+        email: 'kauane@gmail.com',
+        passwordHash: '123',
+      } as User,
+    ];
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return all users', async () => {
+      jest.spyOn(userRepository, 'find').mockResolvedValue(users);
+
+      const result = await usersService.findAll();
+
+      expect(result).toEqual(users);
+      expect(userRepository.find).toHaveBeenCalledWith({
+        order: {
+          id: 'desc',
+        },
+      });
+    });
+
+    it('should throw NotFoundException if users doesnt exists', async () => {
+      jest.spyOn(userRepository, 'find').mockResolvedValue([]);
+
+      expect(usersService.findAll()).rejects.toThrow(
+        'Usuários não encontrados!',
+      );
+    });
+  });
+
+  describe('update', () => {});
 });
