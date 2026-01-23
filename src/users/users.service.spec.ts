@@ -1,3 +1,4 @@
+import { UpdateUserDto } from './dto/update-user.dto';
 import { HashingService } from 'src/auth/hashing/hashing.service';
 import { Repository } from 'typeorm';
 import { UsersService } from './users.service';
@@ -6,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { TokenPayloadDto } from 'src/auth/dto/token.payload.dto';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -23,6 +25,7 @@ describe('UsersService', () => {
             save: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
+            preload: jest.fn(),
           },
         },
         {
@@ -181,5 +184,46 @@ describe('UsersService', () => {
     });
   });
 
-  describe('update', () => {});
+  describe('update', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should update an user if has authorization', async () => {
+      const userId = 1;
+      const updateUserDto = { name: 'Igor', password: '123456789' };
+      const tokenPayload = { sub: userId } as TokenPayloadDto;
+      const passwordHash = 'HASHDESENHA';
+
+      const updateUser = {
+        id: userId,
+        name: 'Igor',
+        passwordHash,
+      } as User;
+
+      jest.spyOn(hashingService, 'hash').mockResolvedValue(passwordHash);
+
+      jest.spyOn(userRepository, 'preload').mockResolvedValue(updateUser);
+
+      jest.spyOn(userRepository, 'save').mockResolvedValue(updateUser);
+
+      const result = await usersService.update(
+        userId,
+        updateUserDto,
+        tokenPayload,
+      );
+
+      expect(hashingService.hash).toHaveBeenCalledWith(updateUserDto.password);
+
+      expect(userRepository.preload).toHaveBeenCalledWith({
+        id: userId,
+        name: updateUserDto.name,
+        email: undefined,
+        passwordHash,
+      });
+
+      expect(userRepository.save).toHaveBeenCalledWith(updateUser);
+      expect(result).toEqual(updateUser);
+    });
+  });
 });
