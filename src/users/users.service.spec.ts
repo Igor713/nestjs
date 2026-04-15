@@ -226,4 +226,113 @@ describe('UsersService', () => {
       expect(result).toEqual(updateUser);
     });
   });
+
+  describe('remove', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should remove a user if has authorization', async () => {
+      const userId = 1;
+      const tokenPayload = { sub: userId } as TokenPayloadDto;
+
+      const userFound = {
+        id: userId,
+        name: 'Igor',
+        email: 'igor@gmail.com',
+        passwordHash: '123456',
+      } as User;
+
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(userFound);
+
+      jest.spyOn(userRepository, 'remove').mockResolvedValue(userFound);
+
+      const result = await usersService.remove(userId, tokenPayload);
+
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          id: userId,
+        },
+      });
+
+      expect(userRepository.remove).toHaveBeenCalledWith(userFound);
+      expect(result).toEqual(userFound);
+    });
+
+    it('should throw Exception if user doesnt has authorization', async () => {
+      const userId = 1;
+      const tokenPayload = { sub: userId } as TokenPayloadDto;
+
+      const userFound = {
+        id: userId,
+        name: 'Igor',
+        email: 'igor@gmail.com',
+        passwordHash: '123456',
+      } as User;
+
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(userFound);
+
+      jest.spyOn(userRepository, 'remove').mockResolvedValue(userFound);
+
+      const result = await usersService.remove(userId, tokenPayload);
+
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          id: userId,
+        },
+      });
+
+      expect(userRepository.remove).toHaveBeenCalledWith(userFound);
+      expect(result).toEqual(userFound);
+    });
+
+    it('should throw Execption if user doesnt exists', async () => {
+      const userId = 1;
+      const tokenPayload = { sub: userId } as TokenPayloadDto;
+
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(usersService.remove(userId, tokenPayload)).rejects.toThrow(
+        'Usuário não encontrado',
+      );
+    });
+  });
+
+  describe('uploadPicture', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should upload a picture if file is valid', async () => {
+      const file = {
+        size: 1024,
+        originalname: 'test.jpg',
+        buffer: Buffer.from('test'),
+      } as Express.Multer.File;
+
+      const tokenPayload = { sub: 1 } as TokenPayloadDto;
+
+      const userFound = {
+        id: 1,
+        name: 'Igor',
+        email: 'igor@gmail.com',
+        passwordHash: '123456',
+      } as User;
+
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(userFound);
+
+      jest.spyOn(userRepository, 'save').mockResolvedValue(userFound);
+
+      const result = await usersService.uploadPicture(file, tokenPayload);
+
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          id: tokenPayload.sub,
+        },
+      });
+
+      expect(userRepository.save).toHaveBeenCalledWith(userFound);
+      expect(result).toEqual(userFound);
+    });
+  });
 });
