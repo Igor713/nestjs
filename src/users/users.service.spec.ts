@@ -26,6 +26,7 @@ describe('UsersService', () => {
             findOne: jest.fn(),
             find: jest.fn(),
             preload: jest.fn(),
+            remove: jest.fn(),
           },
         },
         {
@@ -261,7 +262,7 @@ describe('UsersService', () => {
 
     it('should throw Exception if user doesnt has authorization', async () => {
       const userId = 1;
-      const tokenPayload = { sub: userId } as TokenPayloadDto;
+      const tokenPayload = { sub: 2 } as TokenPayloadDto;
 
       const userFound = {
         id: userId,
@@ -272,9 +273,9 @@ describe('UsersService', () => {
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(userFound);
 
-      jest.spyOn(userRepository, 'remove').mockResolvedValue(userFound);
-
-      const result = await usersService.remove(userId, tokenPayload);
+      await expect(usersService.remove(userId, tokenPayload)).rejects.toThrow(
+        'Você não é essa pessoa',
+      );
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: {
@@ -282,8 +283,7 @@ describe('UsersService', () => {
         },
       });
 
-      expect(userRepository.remove).toHaveBeenCalledWith(userFound);
-      expect(result).toEqual(userFound);
+      expect(userRepository.remove).not.toHaveBeenCalled();
     });
 
     it('should throw Execption if user doesnt exists', async () => {

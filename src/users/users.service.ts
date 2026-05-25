@@ -105,9 +105,15 @@ export class UsersService {
   async remove(id: number, tokenPayloadDto: TokenPayloadDto) {
     const user = await this.userRepository.findOne({ where: { id } });
 
-    if (user?.id !== tokenPayloadDto.sub) {
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (user.id !== tokenPayloadDto.sub) {
       throw new ForbiddenException('Você não é essa pessoa');
     }
+
+    return this.userRepository.remove(user);
   }
 
   async uploadPicture(
@@ -137,6 +143,6 @@ export class UsersService {
     }
 
     user.picture = fileName;
-    await this.userRepository.save(user);
+    return this.userRepository.save(user);
   }
 }
